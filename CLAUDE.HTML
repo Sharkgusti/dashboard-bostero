@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Portafolio</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #001f3f; padding: 20px; color: #8892b0; }
+        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #001f3f; display: flex; justify-content: center; align-items: center; z-index: 9999; color: white; font-size: 1.5rem; text-align: center; }
+        .dashboard { background: #0a192f; max-width: 1400px; margin: 0 auto; border-radius: 20px; padding: 20px 30px; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2); }
+        .header { position: relative; text-align: center; }
+        .header h1 { color: #ccd6f6; }
+        .header p { color: #8892b0; margin-bottom: 20px; }
+        .currency-toggle { position: absolute; top: 0; right: 0; display: flex; border: 1px solid #1d3b5b; border-radius: 20px; overflow: hidden; }
+        .toggle-btn { background: #1d3b5b; color: #8892b0; border: none; padding: 5px 15px; cursor: pointer; font-weight: 600; }
+        .toggle-btn.active { background: #004B8D; color: white; }
+        .summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 15px; margin-bottom: 30px; }
+        .card { color: white; padding: 15px; border-radius: 12px; text-align: center; }
+        .card h3 { font-size: 0.8rem; text-transform: uppercase; margin-bottom: 5px;}
+        .card .value { font-size: 1.6rem; font-weight: 700; }
+        .card.azul { background: linear-gradient(135deg, #004B8D 0%, #003366 100%); }
+        .card.oro { background: linear-gradient(135deg, #FFC300 0%, #D4A017 100%); color: #001f3f; }
+        .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px; }
+        .chart-container, .performance-section, .holdings-section, .summary-table-container { background: #112240; border-radius: 15px; padding: 20px; margin-top: 30px; }
+        .chart-container h3, .performance-section h3, .holdings-section h3, .summary-table-container h3 { text-align: center; margin-bottom: 15px; color: #ccd6f6; }
+        .chart-wrapper { position: relative; height: 35vh; min-height: 300px; }
+        .performance-chart { position: relative; height: 350px; }
+        .chart-filters { text-align: center; margin-bottom: 15px; }
+        .filter-btn { background-color: #1d3b5b; color: #8892b0; border: 2px solid transparent; padding: 8px 15px; margin: 0 5px; border-radius: 20px; cursor: pointer; font-weight: 600; transition: all 0.2s ease-in-out; }
+        .filter-btn.active { background: #004B8D; color: white; border-color: #FFC300; }
+        .holdings-table-wrapper { max-height: 500px; overflow-y: auto; }
+        .holdings-table, .summary-table { width: 100%; border-collapse: collapse; }
+        .holdings-table th, .holdings-table td, .summary-table th, .summary-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #1d3b5b; }
+        .holdings-table th, .summary-table th { background-color: #0a192f; font-weight: 600; color: #ccd6f6; position: sticky; top: 0; z-index: 1; }
+        .holdings-table tr:hover, .summary-table tr:hover { background-color: rgba(0, 75, 141, 0.2); }
+        .pl-positivo { color: #28a745; font-weight: 600; }
+        .pl-negativo { color: #dc3545; font-weight: 600; }
+        .text-right { text-align: right !important; }
+        .heatmap-container { display: flex; flex-wrap: wrap; gap: 5px; background-color: #0a192f; border-radius: 10px; padding: 5px; min-height: 200px; }
+        .heatmap-cell { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 10px; color: white; border-radius: 5px; text-align: center; font-weight: bold; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); transition: transform 0.2s ease-in-out; }
+        .heatmap-cell:hover { transform: scale(1.05); z-index: 10; }
+        .heatmap-ticker { font-size: 1.1rem; }
+        .heatmap-pl { font-size: 0.9rem; }
+        .summary-tables-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 30px; }
+        @media (max-width: 992px) { .charts-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 768px) { .summary-tables-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div id="loading-overlay">
+        <h1>Cargando Portafolio...</h1>
+    </div>
+    <div class="dashboard" style="display: none;">
+        <div class="header">
+            <h1>📊 Dashboard de Portafolio</h1>
+            <p>Resumen de tus inversiones • La Mitad Más Uno</p>
+            <div class="currency-toggle">
+                <button class="toggle-btn active" id="btn-usd">USD</button>
+                <button class="toggle-btn" id="btn-ars">ARS</button>
+            </div>
+        </div>
+        <div class="summary-cards">
+            <div class="card azul"><h3>Valor Total</h3><div class="value" id="valorTotal">...</div></div>
+            <div class="card oro"><h3>Ganancias Realizadas</h3><div class="value" id="ganRealizadas">...</div></div>
+            <div class="card azul"><h3>Ganancias No Realizadas</h3><div class="value" id="ganNoRealizadas">...</div></div>
+            <div class="card oro"><h3>TIR Renta Variable</h3><div class="value" id="tirVariable">...</div></div>
+            <div class="card azul"><h3>TIR Renta Fija</h3><div class="value" id="tirFija">...</div></div>
+        </div>
+        <div class="charts-grid">
+            <div class="chart-container"><h3>🥧 Distribución por Tipo de Activo</h3><div class="chart-wrapper"><canvas id="assetAllocationChart"></canvas></div></div>
+            <div class="chart-container">
+                <h3 id="top-holdings-title">🏆 Top 10 Holdings</h3>
+                <div class="chart-filters" id="top-holdings-filters">
+                    <button class="filter-btn active" data-category="cedears">Cedears</button>
+                    <button class="filter-btn" data-category="ons">ONs</button>
+                    <button class="filter-btn" data-category="bonos">Bonos</button>
+                    <button class="filter-btn" data-category="acciones">Acciones</button>
+                </div>
+                <div class="chart-wrapper"><canvas id="topHoldingsChart"></canvas></div>
+            </div>
+        </div>
+        <div class="performance-section">
+            <h3>📈 Evolución vs. Benchmark</h3>
+            <div class="chart-filters" id="evolution-filters">
+                <button class="filter-btn" data-period="7">7 Días</button>
+                <button class="filter-btn active" data-period="30">30 Días</button>
+                <button class="filter-btn" data-period="ytd">Este Año (YTD)</button>
+                <button class="filter-btn" data-period="all">Desde Inicio</button>
+            </div>
+            <div class="performance-chart"><canvas id="performanceChart"></canvas></div>
+        </div>
+        <div class="holdings-section">
+            <h3>📖 Mis Posiciones</h3>
+            <div class="chart-filters" id="holdings-table-filters">
+                <button class="filter-btn active" data-category="todos">Todos</button>
+                <button class="filter-btn" data-category="Cedear">Cedears</button>
+                <button class="filter-btn" data-category="O Negociable">ONs</button>
+                <button class="filter-btn" data-category="Bonos">Bonos</button>
+                <button class="filter-btn" data-category="Acciones">Acciones</button>
+            </div>
+            <div class="holdings-table-wrapper">
+                <table class="holdings-table">
+                    <thead>
+                        <tr>
+                            <th>Ticker</th><th>Tipo</th><th class="text-right">Cantidad</th><th class="text-right">Costo Total</th><th class="text-right">Valor Actual</th><th class="text-right">P/L %</th><th class="text-right">% Cartera</th>
+                        </tr>
+                    </thead>
+                    <tbody id="holdingsTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+        <div class="chart-container">
+            <h3>🌡️ Termómetro del Plantel (Heatmap)</h3>
+            <div class="chart-filters" id="heatmap-filters">
+                <button class="filter-btn active" data-category="todos">Todos</button>
+                <button class="filter-btn" data-category="Cedear">Cedears</button>
+                <button class="filter-btn" data-category="O Negociable">ONs</button>
+                <button class="filter-btn" data-category="Bonos">Bonos</button>
+                <button class="filter-btn" data-category="Acciones">Acciones</button>
+            </div>
+            <div class="heatmap-container" id="heatmapContainer"></div>
+        </div>
+        <div class="summary-tables-grid" id="dividend-summary-section">
+        </div>
+    </div>
+    
+    <script>
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwfqLfPryZ6pPCHlYfQrVbmqeaJWd12NqUrjbRE_CgkMG3Oyl4XnLZoiBW7Yu2uJAb-/exec';
+        
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                const response = await fetch(SCRIPT_URL);
+                if (!response.ok) throw new Error(`Error de Red/Permisos (${response.status})`);
+                const fullData = await response.json();
+                if (fullData.error) throw new Error(fullData.message);
+                
+                document.getElementById('loading-overlay').style.display = 'none';
+                document.querySelector('.dashboard').style.display = 'block';
+
+                let currentCurrency = 'usd';
+                let activeTableFilter = 'todos';
+                let activeHeatmapFilter = 'todos';
+                const BOCA_COLORS = ['#004B8D', '#FFC300', '#003366', '#D4A017', '#33A8FF', '#806000'];
+                const TIPO_DE_CAMBIO = fullData.kpis.valorTotal.ars / fullData.kpis.valorTotal.usd;
+                
+                const formatPercent = (num) => `${((num || 0) * 100).toFixed(2)}%`;
+                
+                function formatCurrency(num) {
+                    const options = currentCurrency === 'usd' ? { style: 'currency', currency: 'USD', maximumFractionDigits: 0 } : { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 };
+                    return (num || 0).toLocaleString(currentCurrency === 'usd' ? 'en-US' : 'es-AR', options);
+                }
+                
+                const textColor = '#ccd6f6';
+                const gridColor = 'rgba(204, 214, 246, 0.1)';
+
+                const assetAllocationChart = new Chart(document.getElementById('assetAllocationChart').getContext('2d'), { type: 'doughnut', data: { datasets: [{ backgroundColor: BOCA_COLORS, borderWidth: 0, cutout: '60%' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: 'right', labels: { color: textColor } }, tooltip: { callbacks: { label: function(context) { const total = context.chart.getDatasetMeta(0).total; const valor = context.parsed; const porcentaje = ((valor / total) * 100).toFixed(2); return `${context.label}: ${porcentaje}% (${formatCurrency(valor)})`; } } } } } });
+                const topHoldingsChart = new Chart(document.getElementById('topHoldingsChart').getContext('2d'), { type: 'bar', data: { datasets: [{ label: 'Valor', backgroundColor: BOCA_COLORS, borderRadius: 8 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { plData: [], callbacks: { footer: (items) => `P/L: ${formatPercent(items[0].chart.options.plugins.tooltip.plData[items[0].dataIndex])}`, label: (ctx) => `Valor: ${formatCurrency(ctx.parsed.y)}`, footerColor: (ctx) => ctx.chart.options.plugins.tooltip.plData[ctx.tooltip.dataPoints[0].dataIndex] >= 0 ? '#28a745' : '#dc3545', footerFont: { weight: 'bold' } } } }, scales: { y: { ticks: { callback: (value) => new Intl.NumberFormat('en-US', { notation: "compact", compactDisplay: "short" }).format(value), color: textColor }, grid: { color: gridColor, drawOnChartArea: true } }, x: { grid: { display: false }, ticks: { color: textColor } } } } });
+                const performanceChart = new Chart(document.getElementById('performanceChart').getContext('2d'), { type: 'line', data: { labels: [], datasets: [ { label: 'Mi Cartera', yAxisID: 'y-cartera', borderColor: '#004B8D', fill: true, backgroundColor: 'rgba(0, 75, 141, 0.2)', tension: 0.4, borderWidth: 3 }, { label: 'S&P 500', yAxisID: 'y-sp500', borderColor: '#FFC300', fill: false, tension: 0.4, borderDash: [5, 5], borderWidth: 2 } ] }, options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { display: true, position: 'top', labels: { color: textColor } } }, scales: { 'y-cartera': { type: 'linear', display: true, position: 'left', beginAtZero: false, ticks: { callback: formatCurrency, color: textColor }, grid: { color: gridColor } }, 'y-sp500': { type: 'linear', display: true, position: 'right', beginAtZero: false, grid: { drawOnChartArea: false }, ticks: { callback: formatCurrency, color: textColor } }, x: { ticks: { autoSkip: true, maxTicksLimit: 10, color: textColor }, grid: { color: gridColor } } } } });
+
+                function renderizarTablaHoldings(data, filter) {
+                    const tableBody = document.getElementById('holdingsTableBody');
+                    if (!tableBody) return;
+                    tableBody.innerHTML = '';
+                    const filteredData = filter === 'todos' ? data : data.filter(activo => activo.tipo === filter);
+                    filteredData.sort((a, b) => b.valorUSD - a.valorUSD).forEach(activo => {
+                        const plClass = activo.plPorcentaje >= 0 ? 'pl-positivo' : 'pl-negativo';
+                        const costo = currentCurrency === 'usd' ? activo.costoUSD : activo.costoUSD * TIPO_DE_CAMBIO;
+                        const valorPosicion = currentCurrency === 'usd' ? activo.valorUSD : activo.valorUSD * TIPO_DE_CAMBIO;
+                        tableBody.innerHTML += `<tr><td><strong>${activo.ticker}</strong></td><td>${activo.tipo}</td><td class="text-right">${(activo.cantidad || 0).toLocaleString('es-AR', {maximumFractionDigits: 2})}</td><td class="text-right">${formatCurrency(costo)}</td><td class="text-right">${formatCurrency(valorPosicion)}</td><td class="text-right ${plClass}">${formatPercent(activo.plPorcentaje)}</td><td class="text-right">${formatPercent(activo.porcentajeCartera)}</td></tr>`;
+                    });
+                }
+
+                function renderizarHeatmap(data, filter) {
+                    const container = document.getElementById('heatmapContainer');
+                    if (!container) return;
+                    container.innerHTML = '';
+                    const filteredData = filter === 'todos' ? data : data.filter(asset => asset.tipo === filter);
+                    const totalFilteredValue = filteredData.reduce((sum, asset) => sum + asset.valorUSD, 0);
+                    if (totalFilteredValue === 0) { container.innerHTML = '<p style="color:#8892b0; width: 100%; text-align: center;">No hay activos en esta categoría.</p>'; return; }
+                    filteredData.forEach(asset => {
+                        const cell = document.createElement('div');
+                        cell.className = 'heatmap-cell';
+                        const weight = (asset.valorUSD / totalFilteredValue) * 100;
+                        cell.style.flexBasis = `${Math.max(weight, 5)}%`;
+                        const pl = asset.plPorcentaje;
+                        let color;
+                        if (pl > 0.02) color = '#28a745'; else if (pl > 0) color = '#20c997'; else if (pl < -0.02) color = '#dc3545'; else if (pl < 0) color = '#fd7e14'; else color = '#6c757d';
+                        cell.style.backgroundColor = color;
+                        cell.innerHTML = `<div class="heatmap-ticker">${asset.ticker}</div><div class="heatmap-pl">${formatPercent(pl)}</div>`;
+                        container.appendChild(cell);
+                    });
+                }
+                
+                function renderizarResumenes(divsData, rentasData) {
+                    const container = document.getElementById('dividend-summary-section');
+                    if (!container) return;
+                    let html = '';
+                    if (divsData && divsData.porTicker.length > 0) {
+                        const totalDivs = divsData.total;
+                        html += `<div class="summary-table-container"><h3>🏆 Goleadores de Dividendos</h3><table class="summary-table"><thead><tr><th>Ticker</th><th class="text-right">Cobrado</th><th class="text-right">%</th></tr></thead><tbody>`;
+                        divsData.porTicker.slice(0, 10).forEach(item => { html += `<tr><td><strong>${item.ticker}</strong></td><td class="text-right">${formatCurrency(item.monto)}</td><td class="text-right">${(totalDivs > 0 ? (item.monto / totalDivs * 100) : 0).toFixed(1)}%</td></tr>`; });
+                        html += `</tbody></table></div>`;
+                    }
+                    if (divsData && divsData.porAno.length > 0) {
+                        const totalDivs = divsData.total;
+                        html += `<div class="summary-table-container"><h3>🗓️ Dividendos por Temporada</h3><table class="summary-table"><thead><tr><th>Año</th><th class="text-right">Cobrado</th><th class="text-right">%</th></tr></thead><tbody>`;
+                        divsData.porAno.forEach(item => { html += `<tr><td><strong>${item.ano}</strong></td><td class="text-right">${formatCurrency(item.monto)}</td><td class="text-right">${(totalDivs > 0 ? (item.monto / totalDivs * 100) : 0).toFixed(1)}%</td></tr>`; });
+                        html += `</tbody></table></div>`;
+                    }
+                    if (rentasData && rentasData.porAno.length > 0) {
+                        const totalRentas = rentasData.total;
+                        html += `<div class="summary-table-container"><h3>🛡️ Renta Fija por Temporada</h3><table class="summary-table"><thead><tr><th>Año</th><th class="text-right">Cobrado</th><th class="text-right">%</th></tr></thead><tbody>`;
+                        rentasData.porAno.forEach(item => { html += `<tr><td><strong>${item.ano}</strong></td><td class="text-right">${formatCurrency(item.monto)}</td><td class="text-right">${(totalRentas > 0 ? (item.monto / totalRentas * 100) : 0).toFixed(1)}%</td></tr>`; });
+                        html += `</tbody></table></div>`;
+                    }
+                    container.innerHTML = html;
+                }
+
+                function updateVisuals() {
+                    document.getElementById('valorTotal').textContent = formatCurrency(currentCurrency === 'usd' ? fullData.kpis.valorTotal.usd : fullData.kpis.valorTotal.ars);
+                    document.getElementById('ganRealizadas').textContent = formatCurrency(currentCurrency === 'usd' ? fullData.kpis.gananciasRealizadas.usd : fullData.kpis.gananciasRealizadas.usd * TIPO_DE_CAMBIO);
+                    document.getElementById('ganNoRealizadas').textContent = formatCurrency(currentCurrency === 'usd' ? fullData.kpis.gananciasNoRealizadas.usd : fullData.kpis.gananciasNoRealizadas.usd * TIPO_DE_CAMBIO);
+                    document.getElementById('tirVariable').textContent = formatPercent(fullData.kpis.tirVariable);
+                    document.getElementById('tirFija').textContent = formatPercent(fullData.kpis.tirFija);
+                    
+                    const distribucionData = Object.values(fullData.distribucionTipos);
+                    assetAllocationChart.data.labels = Object.keys(fullData.distribucionTipos);
+                    assetAllocationChart.data.datasets[0].data = currentCurrency === 'usd' ? distribucionData : distribucionData.map(v => v * TIPO_DE_CAMBIO);
+                    
+                    const activeGraphFilter = document.querySelector('#top-holdings-filters .active').dataset.category;
+                    const categoryData = fullData.mejoresPosiciones[activeGraphFilter];
+                    topHoldingsChart.data.labels = categoryData.map(item => item.ticker);
+                    topHoldingsChart.data.datasets[0].data = categoryData.map(item => currentCurrency === 'usd' ? item.valorUSD : item.valorUSD * TIPO_DE_CAMBIO);
+                    topHoldingsChart.options.plugins.tooltip.plData = categoryData.map(item => item.pl);
+                    
+                    const activePeriodFilter = document.querySelector('#evolution-filters .active').dataset.period;
+                    const { fechas, valores, benchmark } = fullData.evolucionHistorica;
+                    const valoresMoneda = valores.map(v => v * (currentCurrency === 'usd' ? 1 : TIPO_DE_CAMBIO));
+                    const benchmarkMoneda = benchmark.map(b => b * (currentCurrency === 'usd' ? 1 : TIPO_DE_CAMBIO));
+                    let dataFiltrada = fechas.map((f, i) => ({ fecha: f, valor: valoresMoneda[i] || null, bench: benchmarkMoneda[i] || null }));
+                    if (activePeriodFilter !== 'all') { dataFiltrada = dataFiltrada.slice(-parseInt(activePeriodFilter, 10)); }
+                    performanceChart.data.labels = dataFiltrada.map(d => new Date(d.fecha).toLocaleDateString('es-AR', {day: '2-digit', month: '2-digit'}));
+                    performanceChart.data.datasets[0].data = dataFiltrada.map(d => d.valor);
+                    performanceChart.data.datasets[1].data = dataFiltrada.map(d => d.bench);
+                    
+                    renderizarResumenes(fullData.resumenDividendos, fullData.resumenRentaFija);
+                    renderizarTablaHoldings(fullData.carteraDetallada, activeTableFilter);
+                    renderizarHeatmap(fullData.carteraDetallada, activeHeatmapFilter);
+
+                    [assetAllocationChart, topHoldingsChart, performanceChart].forEach(chart => chart.update());
+                }
+
+                document.querySelectorAll('.currency-toggle .toggle-btn').forEach(button => { button.addEventListener('click', (e) => { document.querySelector('.currency-toggle .active').classList.remove('active'); e.target.classList.add('active'); currentCurrency = e.target.id === 'btn-usd' ? 'usd' : 'ars'; updateVisuals(); }); });
+                document.querySelectorAll('#top-holdings-filters .filter-btn, #evolution-filters .filter-btn, #holdings-table-filters .filter-btn, #heatmap-filters .filter-btn').forEach(button => { 
+                    button.addEventListener('click', (e) => {
+                        const parent = e.target.parentElement;
+                        parent.querySelector('.active').classList.remove('active');
+                        e.target.classList.add('active');
+                        if (parent.id === 'holdings-table-filters') activeTableFilter = e.target.dataset.category;
+                        if (parent.id === 'heatmap-filters') activeHeatmapFilter = e.target.dataset.category;
+                        updateVisuals();
+                    });
+                });
+                
+                updateVisuals();
+
+            } catch (error) {
+                console.error('Error al iniciar el dashboard:', error);
+                const loadingOverlay = document.getElementById('loading-overlay');
+                loadingOverlay.innerHTML = `<div style="text-align:center; padding: 20px; max-width: 80%;"><h1 style="color:red;">Error de Conexión</h1><p style="color:#ff8a8a;margin-top:10px;">${error.message}</p><p style="color:yellow;margin-top:20px;font-size:0.9rem;">Revisá la consola (F12), que la URL del Script sea correcta y que la implementación esté activa para 'Cualquier usuario'.</p></div>`;
+            }
+        });
+    </script>
+</body>
+</html>
