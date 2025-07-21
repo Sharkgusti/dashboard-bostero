@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Bomba Atómica Anti-CORS</title>
+    <style>
+        body { font-family: sans-serif; background: #0a192f; color: #ccd6f6; padding: 20px; text-align: center;}
+        button { font-size: 22px; padding: 20px; margin: 10px; cursor: pointer; background-color: #dc3545; color: white; border: none; border-radius: 5px; font-weight: bold; }
+        #results { margin-top: 20px; padding: 15px; background-color: #112240; border-radius: 5px; text-align: left; }
+    </style>
+</head>
+<body>
+    <h1>Bomba Atómica Anti-CORS</h1>
+    <p>¡Abre la consola (F12) y detona la bomba!</p>
+    <button id="bombaBtn">¡DETONAR BOMBA!</button>
+    <div id="results">
+        <h2>Resultados:</h2>
+        <pre id="log"></pre>
+    </div>
+
+<script>
+    // ¡¡¡REEMPLAZA ESTA URL CON LA NUEVA QUE ACABAS DE COPIAR!!!
+    const URL_BOMBA = "https://script.google.com/macros/s/AKfycbyRIi7fLvu1usS9WmOK5OIbCUvsWdPJ2S7ci9j7gyZIgezNdDzg4eAGFmelM873TYI0/exec";
+
+    const logDiv = document.getElementById('log');
+    function logToScreen(message) {
+        console.log(message);
+        logDiv.textContent += message + '\n';
+    }
+
+    async function detonarBomba() {
+        logDiv.textContent = '';
+        logToScreen('--- DETONANDO BOMBA ---');
+        try {
+            const testPayload = { mensaje: "Questa è la vendetta!" };
+            
+            logToScreen('Enviando petición POST a: ' + URL_BOMBA);
+            const response = await fetch(URL_BOMBA, {
+                method: 'POST',
+                mode: 'cors',
+                body: JSON.stringify(testPayload) // No usamos text/plain, vamos de frente
+            });
+            
+            logToScreen(`Respuesta recibida. Status: ${response.status}`);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            
+            const data = await response.json();
+            logToScreen(`✅ ¡¡¡VITTORIA, CONTADORE!!! Respuesta: ${JSON.stringify(data)}`);
+            logToScreen('--------------------');
+            logToScreen('¡EL MALEDETTO CORS HA CAÍDO!');
+
+        } catch (error) {
+            logToScreen(`❌ ¡LA BOMBA FALLÓ! El fantasma es real. Error: ${error.message}`);
+            console.error('Error en la detonación:', error);
+        }
+    }
+
+    document.getElementById('bombaBtn').addEventListener('click', detonarBomba);
+</script>
+</body>
+</html>
