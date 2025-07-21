@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Laboratorio de Conexión a La Caja</title>
+    <style>
+        body { font-family: sans-serif; background: #0a192f; color: #ccd6f6; padding: 20px; }
+        button { font-size: 16px; padding: 10px; margin: 5px; cursor: pointer; background-color: #FFC300; border: none; border-radius: 5px; font-weight: bold; }
+        h1, h2 { color: #ccd6f6;}
+        p { color: #8892b0; }
+        #results { margin-top: 20px; padding: 15px; background-color: #112240; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Laboratorio de Conexión a "La Caja"</h1>
+    <p>Abre la consola (F12) y haz clic en los botones para ver los resultados detallados.</p>
+
+    <form id="myForm">
+        <input type="hidden" name="tipoMovimiento" value="Test Formulario">
+        <input type="hidden" name="monto" value="999">
+        <button type="submit">1. Probar Enviar Formulario (con FormData)</button>
+    </form>
+    
+    <button id="testBtn">2. Testear Todos los Métodos de Conexión</button>
+    
+    <div id="results">
+        <h2>Resultados:</h2>
+        <pre id="log"></pre>
+    </div>
+
+<script>
+// ============================================================================
+// FRONTEND JAVASCRIPT - SOLUCIÓN CORS CON DEBUG Y MÚLTIPLES ESTRATEGIAS
+// ============================================================================
+
+const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbw9QHJ1FKyaCpxYqKs0p_N5i2puUh3R3fR3eAWQKMjMD87wnsTKpUANNWhiTD1F_UIO/exec';
+
+const DEBUG_MODE = true;
+const logDiv = document.getElementById('log');
+
+function logToScreen(message) {
+    console.log(message);
+    logDiv.textContent += message + '\n';
+}
+
+function debugLog(...args) { if (DEBUG_MODE) { console.log('[DEBUG]', ...args); } }
+
+async function sendDataFormData(formData) {
+  logToScreen('Intentando con FormData...');
+  const form = new FormData();
+  Object.keys(formData).forEach(key => form.append(key, formData[key]));
+  const response = await fetch(GAS_WEB_APP_URL, { method: 'POST', body: form, mode: 'cors', cache: 'no-cache' });
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  return await response.json();
+}
+
+async function sendDataURLParams(formData) {
+  logToScreen('Intentando con URLSearchParams...');
+  const params = new URLSearchParams();
+  Object.keys(formData).forEach(key => params.append(key, formData[key]));
+  const response = await fetch(GAS_WEB_APP_URL, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: params, mode: 'cors', cache: 'no-cache' });
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  return await response.json();
+}
+
+async function sendDataJSON(formData) {
+  logToScreen('Intentando con JSON...');
+  const response = await fetch(GAS_WEB_APP_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(formData), mode: 'cors', cache: 'no-cache' });
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  return await response.json();
+}
+
+async function loadData() {
+  logToScreen('Intentando con GET...');
+  const response = await fetch(GAS_WEB_APP_URL, { method: 'GET', mode: 'cors', cache: 'no-cache' });
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  return await response.json();
+}
+
+async function testConnection() {
+  logDiv.textContent = '';
+  logToScreen('=== INICIANDO TESTS ===\n');
+  try {
+    logToScreen('\n1. Probando GET request...');
+    const getData = await loadData();
+    logToScreen(`✅ GET request exitoso: ${JSON.stringify(getData)}`);
+    
+    const testData = { tipoMovimiento: 'Test', categoria: 'Debug', monto: '100.00', descripcion: 'Test desde frontend' };
+    
+    logToScreen('\n2. Probando POST con FormData...');
+    const postDataForm = await sendDataFormData(testData);
+    logToScreen(`✅ POST (FormData) exitoso: ${JSON.stringify(postDataForm)}`);
+    
+    logToScreen('\n3. Probando POST con URLSearchParams...');
+    const postDataParams = await sendDataURLParams(testData);
+    logToScreen(`✅ POST (URLSearchParams) exitoso: ${JSON.stringify(postDataParams)}`);
+
+    logToScreen('\n4. Probando POST con JSON...');
+    const postDataJson = await sendDataJSON(testData);
+    logToScreen(`✅ POST (JSON) exitoso: ${JSON.stringify(postDataJson)}`);
+    
+    logToScreen('\n\n=== TODOS LOS TESTS COMPLETADOS CON ÉXITO ===');
+  } catch (error) { 
+    logToScreen(`❌ Test falló: ${error.message}`);
+    console.error('Test falló:', error);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  logToScreen('DOM cargado. Laboratorio listo.');
+  const form = document.getElementById('myForm');
+  if (form) {
+    form.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      logDiv.textContent = '';
+      logToScreen('Enviando formulario con FormData...');
+      const formData = new FormData(form);
+      const data = Object.fromEntries(formData.entries());
+      try {
+        const result = await sendDataFormData(data);
+        logToScreen(`✅ Formulario enviado exitosamente: ${JSON.stringify(result)}`);
+      } catch (error) { 
+        logToScreen(`❌ Error al enviar formulario: ${error.message}`);
+        console.error('Error al enviar formulario:', error);
+      }
+    });
+  }
+  const testBtn = document.getElementById('testBtn');
+  if (testBtn) { testBtn.addEventListener('click', testConnection); }
+});
+
+(function validateConfig() {
+  if (GAS_WEB_APP_URL === '¡¡¡AQUÍ VA LA NUEVA URL QUE COPIASTE DEL PASO 2!!!') {
+    console.error('❌ ERROR: DEBES CONFIGURAR LA URL!');
+  } else { console.log('✅ Configuración válida, URL:', GAS_WEB_APP_URL); }
+})();
+</script>
+</body>
+</html>
