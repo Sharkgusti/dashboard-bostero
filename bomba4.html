@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Bunker Contrabbandiere</title>
+    <style>
+        body { font-family: sans-serif; background: #0a192f; color: #ccd6f6; padding: 20px; text-align: center;}
+        h1, h2 { color: #ccd6f6;}
+        #results { margin-top: 20px; padding: 15px; background-color: #112240; border-radius: 5px; text-align: left; }
+    </style>
+</head>
+<body>
+    <h1>Bunker Contrabbandiere</h1>
+    <h2>Revisa la consola (F12) o esta caja de resultados.</h2>
+    <div id="results">
+        <h2>Resultados:</h2>
+        <pre id="log"></pre>
+    </div>
+
+<script>
+    // ¡¡¡REEMPLAZA ESTA URL CON LA NUEVA QUE ACABAS DE COPIAR!!!
+    const URL_CONTRABBANDIERE = "¡¡¡AQUÍ VA LA NUEVA URL DEL PASO 2!!!";
+
+    const logDiv = document.getElementById('log');
+    function logToScreen(message) { logDiv.textContent += message + '\n'; }
+
+    // Esta es la función que nuestro servidor llamará desde lejos
+    function procesarRespuesta(respuesta) {
+        console.log("¡El Contrabando fue un éxito!", respuesta);
+        if (respuesta.status === 'ok') {
+            logToScreen('✅ ¡VITTORIA, CONTADORE! ¡DATOS RECIBIDOS!');
+            logToScreen('-------------------------------------');
+            logToScreen('Datos de tus cuentas:');
+            logToScreen(JSON.stringify(respuesta.data.cuentas, null, 2));
+        } else {
+            logToScreen(`❌ ERROR del servidor: ${respuesta.message}`);
+        }
+    }
+
+    // ¡Aquí está la magia del contrabbandiere!
+    function llamarServidor() {
+        logToScreen('Enviando el `piccione viaggiatore` (la paloma mensajera)...');
+        
+        // Creamos una nueva etiqueta <script>
+        const script = document.createElement('script');
+        
+        // Le decimos que su fuente es la URL de nuestro servidor,
+        // y le pasamos el nombre de nuestra función de respuesta.
+        script.src = `${URL_CONTRABBANDIERE}?callback=procesarRespuesta`;
+        
+        // La añadimos a la página. ¡El navegador la cargará sin preguntar por CORS!
+        document.body.appendChild(script);
+    }
+
+    // Llamamos al servidor en cuanto carga la página
+    document.addEventListener('DOMContentLoaded', llamarServidor);
+</script>
+</body>
+</html>
