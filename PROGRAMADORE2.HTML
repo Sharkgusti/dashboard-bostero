@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LA CAJA - Bunker de Carga</title>
+    <style>
+        :root {--dark-navy: #0a192f; --navy: #112240; --light-navy: #1d3b5b; --slate: #8892b0; --light-slate: #a8b2d1; --lightest-slate: #ccd6f6; --gold: #FFC300; --positive: #28a745; --negative: #dc3545;} * { margin: 0; padding: 0; box-sizing: border-box; } body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; background-color: var(--dark-navy); color: var(--slate); padding: 1.5rem; } .container-bostero { max-width: 500px; margin: auto; } header { text-align: center; margin-bottom: 2rem; } h1 { font-size: 1.5rem; color: var(--lightest-slate); margin-top: 0.5rem; } label { display: block; margin-top: 1rem; color: var(--light-slate); font-weight: 600; font-size: 0.9rem; } .input-group { display: flex; align-items: center; gap: 0.5rem; } input, select { box-sizing: border-box; width: 100%; padding: 12px; margin-top: 5px; border-radius: 6px; border: 1px solid var(--light-navy); background-color: var(--navy); color: var(--lightest-slate); font-size: 1rem; transition: border-color 0.2s; } input:focus, select:focus { outline: 0; border-color: var(--gold); } select:disabled { background-color: #2a3a52; opacity: 0.6; } .btn-bostero { background-color: var(--gold); color: var(--dark-navy); font-weight: bold; padding: 14px; width: 100%; margin-top: 1.5rem; border: none; border-radius: 6px; cursor: pointer; font-size: 1.2rem; text-transform: uppercase; transition: opacity 0.2s; } .btn-bostero:disabled { background-color: var(--slate); cursor: not-allowed; } .btn-bostero:hover:not(:disabled) { opacity: 0.9; } .btn-plus { min-width: 45px; height: 47px; margin-top: 5px; background-color: var(--light-navy); color: var(--lightest-slate); border: 1px solid var(--light-navy); border-radius: 6px; font-size: 1.8rem; font-weight: bold; cursor: pointer; transition: background-color 0.2s; } .btn-plus:hover { background-color: var(--navy); border-color: var(--gold); } #panel-nueva-categoria { background-color: var(--navy); padding: 1rem; margin-top: 10px; border-radius: 6px; border: 1px solid var(--light-navy); } #mensaje-sistema { text-align: center; margin-top: 1.5rem; padding: 12px; border-radius: 6px; font-weight: 600; display: none; word-wrap: break-word; } .exito { background-color: var(--positive); color: white; display: block; } .error { background-color: var(--negative); color: white; display: block; } .hidden { display: none; } .saldo-info { font-size: 0.8em; color: var(--slate); margin-left: 0.5rem; }
+    </style>
+</head>
+<body>
+<div class="container-bostero">
+    <header><h1>BUNKER DE CARGA</h1></header>
+    <form id="form-movimiento" onsubmit="handleFormSubmit(event)">
+        <label for="tipo-movimiento">Tipo de Movimiento</label>
+        <select id="tipo-movimiento" name="tipoMovimiento" required><option value="">Elegí una opción...</option><option value="GASTO">Gasto</option><option value="INGRESO">Ingreso</option><option value="TRANSFERENCIA">Transferencia</option><option value="AJUSTE DE SALDO">Ajuste de Saldo</option></select>
+        <hr class="hidden" id="main-separator" style="border-color: var(--light-navy); margin: 1rem 0;">
+        <div id="seccion-gasto" class="hidden">
+            <label for="categoria-gasto">Categoría</label><div class="input-group"><select id="categoria-gasto" name="categoria"></select><button type="button" id="btn-toggle-nueva-cat" class="btn-plus">+</button></div>
+            <div id="panel-nueva-categoria" class="hidden"><label for="nueva-categoria-nombre">Nombre Nueva Categoría</label><input type="text" id="nueva-categoria-nombre"><label for="nueva-subcategoria-nombre">Nombre Nueva Subcategoría</label><input type="text" id="nueva-subcategoria-nombre"><button type="button" id="btn-guardar-nueva-cat" class="btn-bostero" style="font-size:1em;padding:8px;margin-top:10px;">Guardar Categoría</button></div>
+            <label for="subcategoria-gasto">Subcategoría</label><select id="subcategoria-gasto" name="subcategoria" disabled></select>
+            <label for="metodo-pago-gasto">Método de Pago<span id="saldo-gasto" class="saldo-info"></span></label><select id="metodo-pago-gasto" name="metodoPago"></select>
+        </div>
+        <div id="seccion-ingreso" class="hidden">
+            <label for="categoria-ingreso">Categoría</label><select id="categoria-ingreso" name="categoriaIngreso"></select>
+            <label for="cuenta-destino-ingreso">Cuenta Destino<span id="saldo-ingreso" class="saldo-info"></span></label><select id="cuenta-destino-ingreso" name="cuentaDestino"></select>
+        </div>
+        <div id="seccion-transferencia" class="hidden">
+            <label for="cuenta-origen-transferencia">Cuenta Origen<span id="saldo-origen" class="saldo-info"></span></label><select id="cuenta-origen-transferencia" name="cuentaOrigen"></select>
+            <label for="cuenta-destino-transferencia">Cuenta Destino<span id="saldo-destino" class="saldo-info"></span></label><select id="cuenta-destino-transferencia" name="cuentaDestino"></select>
+        </div>
+        <div id="seccion-ajuste" class="hidden">
+             <label for="cuenta-ajuste">Cuenta a Ajustar<span id="saldo-ajuste" class="saldo-info"></span></label><select id="cuenta-ajuste" name="cuentaAjuste"></select>
+        </div>
+        <div id="campos-comunes" class="hidden">
+            <label for="monto">Monto ($)</label><input type="number" id="monto" name="monto" required placeholder="Ej: 15000.50" step="0.01">
+            <label for="descripcion">Descripción (Opcional)</label><input type="text" id="descripcion" name="descripcion" placeholder="Ej: Compra COTO, Sueldo...">
+            <button type="submit" id="btn-submit" class="btn-bostero" disabled>¡MANDALE MECHA!</button>
+        </div>
+    </form>
+    <div id="mensaje-sistema"></div>
+</div>
+<script>
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyM4_-wV4ZzjuW_N1i7LMdoWRVjb1HhMgLeUwFX8DL4TLyNW1SxCD_9x6JtcA-255Jb/exec";
+    const dom={form:document.getElementById("form-movimiento"),tipoMovimiento:document.getElementById("tipo-movimiento"),secciones:{GASTO:document.getElementById("seccion-gasto"),INGRESO:document.getElementById("seccion-ingreso"),TRANSFERENCIA:document.getElementById("seccion-transferencia"),"AJUSTE DE SALDO":document.getElementById("seccion-ajuste")},hr:document.getElementById("main-separator"),camposComunes:document.getElementById("campos-comunes"),submitButton:document.getElementById("btn-submit"),mensajeSistema:document.getElementById("mensaje-sistema"),catGasto:document.getElementById("categoria-gasto"),subcatGasto:document.getElementById("subcategoria-gasto"),metodoPago:document.getElementById("metodo-pago-gasto"),catIngreso:document.getElementById("categoria-ingreso"),cuentaDestinoIngreso:document.getElementById("cuenta-destino-ingreso"),cuentaOrigenTransf:document.getElementById("cuenta-origen-transferencia"),cuentaDestinoTransf:document.getElementById("cuenta-destino-transferencia"),cuentaAjuste:document.getElementById("cuenta-ajuste"),btnToggleNuevaCat:document.getElementById("btn-toggle-nueva-cat"),panelNuevaCat:document.getElementById("panel-nueva-categoria"),nuevaCatNombre:document.getElementById("nueva-categoria-nombre"),nuevaSubcatNombre:document.getElementById("nueva-subcategoria-nombre"),btnGuardarNuevaCat:document.getElementById("btn-guardar-nueva-cat"),saldosSpan:{gasto:document.getElementById("saldo-gasto"),ingreso:document.getElementById("saldo-ingreso"),origen:document.getElementById("saldo-origen"),destino:document.getElementById("saldo-destino"),ajuste:document.getElementById("saldo-ajuste")}};
+    let datos={};
+    function llamarServidorPOST(endpoint,payload){return fetch(WEB_APP_URL,{method:'POST',mode:'cors',body:JSON.stringify({endpoint:endpoint,payload:payload}),headers:{'Content-Type':'text/plain;charset=utf-8'},}).then(response=>response.json())}
+    function cargarDatosIniciales(){mostrarMensaje("Cargando datos desde La Caja...","exito");fetch(WEB_APP_URL,{method:'GET',mode:'cors'}).then(res=>{if(!res.ok)throw new Error(`El servidor respondió con error ${res.status}`);return res.json()}).then(onDatosRecibidos).catch(onGuardadoError)}
+    document.addEventListener("DOMContentLoaded",cargarDatosIniciales);
+    function onDatosRecibidos(d){if(d.status==='error')return onGuardadoError(d);datos=d.data;populateSelect(dom.catGasto,Object.keys(datos.gastos).sort(),"Elegí una categoría...");populateSelect(dom.metodoPago,datos.cuentas.sort(),"Elegí un método...");populateSelect(dom.catIngreso,datos.ingresos.sort(),"Elegí una categoría...");populateSelect(dom.cuentaDestinoIngreso,datos.cuentas.sort(),"Elegí una cuenta...");populateSelect(dom.cuentaOrigenTransf,datos.cuentas.sort(),"Elegí origen...");populateSelect(dom.cuentaDestinoTransf,datos.cuentas.sort(),"Elegí destino...");populateSelect(dom.cuentaAjuste,datos.cuentas.sort(),"Elegí cuenta...");mostrarMensaje("¡Listo para cargar!","exito")}
+    dom.tipoMovimiento.addEventListener('change',function(){const t=this.value;Object.values(dom.secciones).forEach(el=>el.classList.add('hidden'));dom.hr.classList.add('hidden');dom.camposComunes.classList.add('hidden');dom.form.reset();dom.tipoMovimiento.value=t;if(t){dom.secciones[t].classList.remove('hidden');dom.hr.classList.remove('hidden');dom.camposComunes.classList.remove('hidden');dom.submitButton.disabled=false}else{dom.submitButton.disabled=true}});
+    dom.catGasto.addEventListener('change',function(){const t=this.value;dom.subcatGasto.innerHTML='';if(t&&datos.gastos[t]){populateSelect(dom.subcatGasto,datos.gastos[t].sort(),'Elegí subcategoría...');dom.subcatGasto.disabled=false}else{dom.subcatGasto.disabled=true}});
+    [dom.metodoPago,dom.cuentaDestinoIngreso,dom.cuentaOrigenTransf,dom.cuentaDestinoTransf,dom.cuentaAjuste].forEach(e=>{e.addEventListener('change',actualizarSaldosVisibles)});
+    function actualizarSaldosVisibles(){const t=datos.saldos||{};dom.saldosSpan.gasto.textContent=dom.metodoPago.value?` - Saldo: $${(t[dom.metodoPago.value]||0).toFixed(2)}`:"";dom.saldosSpan.ingreso.textContent=dom.cuentaDestinoIngreso.value?` - Saldo: $${(t[dom.cuentaDestinoIngreso.value]||0).toFixed(2)}`:"";dom.saldosSpan.origen.textContent=dom.cuentaOrigenTransf.value?` - Saldo: $${(t[dom.cuentaOrigenTransf.value]||0).toFixed(2)}`:"";dom.saldosSpan.destino.textContent=dom.cuentaDestinoTransf.value?` - Saldo: $${(t[dom.cuentaDestinoTransf.value]||0).toFixed(2)}`:"";dom.saldosSpan.ajuste.textContent=dom.cuentaAjuste.value?` - Saldo: $${(t[dom.cuentaAjuste.value]||0).toFixed(2)}`:""}
+    function handleFormSubmit(e){e.preventDefault();dom.submitButton.disabled=true;dom.submitButton.textContent="REGISTRANDO...";const datosParaEnviar=Object.fromEntries(new FormData(dom.form).entries());llamarServidorPOST('registrarMovimiento',datosParaEnviar).then(onGuardadoExitoso).catch(onGuardadoError)}
+    function onGuardadoExitoso(t){mostrarMensaje(t.message,t.status);if(t.status==="ok"){dom.form.reset();Object.values(dom.secciones).forEach(el=>el.classList.add('hidden'));dom.camposComunes.classList.add('hidden');dom.hr.classList.add('hidden');dom.tipoMovimiento.value="";cargarDatosIniciales()}resetearBoton()}
+    function onGuardadoError(t){mostrarMensaje(t.message||"Error de conexión. Revisa la URL.","error");resetearBoton()}
+    dom.btnToggleNuevaCat.addEventListener("click",()=>dom.panelNuevaCat.classList.toggle("hidden"));
+    dom.btnGuardarNuevaCat.addEventListener("click",()=>{const t=dom.nuevaCatNombre.value.trim();const e=dom.nuevaSubcatNombre.value.trim();if(!t||!e)return mostrarMensaje("Completá ambos campos.","error");llamarServidorPOST('agregarNuevaCategoriaGasto',{nuevaCategoria:t,nuevaSubcategoria:e}).then(respuesta=>{mostrarMensaje(respuesta.data.message,respuesta.status);if(respuesta.status==='ok'){cargarDatosIniciales();dom.panelNuevaCat.classList.add('hidden');dom.nuevaCatNombre.value="";dom.nuevaSubcatNombre.value=""}})});
+    function populateSelect(t,e,o){t.innerHTML=`<option value="">${o}</option>`;e.forEach(e=>t.add(new Option(e,e)))}
+    function mostrarMensaje(t,e){dom.mensajeSistema.className=e;dom.mensajeSistema.textContent=t;dom.mensajeSistema.style.display='block';setTimeout(()=>{dom.mensajeSistema.style.display='none'},5000)}
+    function resetearBoton(){dom.submitButton.disabled=false;dom.submitButton.textContent="¡Mandale Mecha!"}
+</script>
+</body>
+</html>
